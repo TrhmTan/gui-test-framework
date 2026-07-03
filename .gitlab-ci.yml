@@ -1,0 +1,346 @@
+image: mcr.microsoft.com/playwright:v1.44.1-jammy
+
+stages:
+  - install
+  - test
+  - report
+
+# ════════════════════════════════════════════════════
+# BIẾN THAM SỐ HÓA — Thay đổi khi Run Pipeline từ UI
+# ════════════════════════════════════════════════════
+variables:
+  # Môi trường chạy test (test | sit | uat | local)
+  TEST_ENV: "test"
+
+default:
+  tags:
+    - your-runner-tag
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .npm/
+
+# ════════════════════════════════════════════════════
+# STAGE 1: CÀI ĐẶT MÔI TRƯỜNG
+# ════════════════════════════════════════════════════
+install_dependencies:
+  stage: install
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npx playwright install --with-deps
+    - npx playwright install chrome
+    # Sinh credentials.env từ CI/CD Variables (Settings → CI/CD → Variables — dùng masked variables, KHÔNG đặt giá trị mặc định)
+    - |
+      : "${CI_LOCAL_HTTP_USER:?CI_LOCAL_HTTP_USER CI/CD variable is required}"
+      : "${CI_LOCAL_HTTP_PASS:?CI_LOCAL_HTTP_PASS CI/CD variable is required}"
+      : "${CI_HOSPITAL_NAME:?CI_HOSPITAL_NAME CI/CD variable is required}"
+      : "${CI_SUPER_ADMIN_USERNAME:?CI_SUPER_ADMIN_USERNAME CI/CD variable is required}"
+      : "${CI_SUPER_ADMIN_PASSWORD:?CI_SUPER_ADMIN_PASSWORD CI/CD variable is required}"
+      : "${CI_NURSE_USERNAME:?CI_NURSE_USERNAME CI/CD variable is required}"
+      : "${CI_NURSE_PASSWORD:?CI_NURSE_PASSWORD CI/CD variable is required}"
+      : "${CI_COORDINATOR_USERNAME:?CI_COORDINATOR_USERNAME CI/CD variable is required}"
+      : "${CI_COORDINATOR_PASSWORD:?CI_COORDINATOR_PASSWORD CI/CD variable is required}"
+      : "${CI_DOCTOR_USERNAME:?CI_DOCTOR_USERNAME CI/CD variable is required}"
+      : "${CI_DOCTOR_PASSWORD:?CI_DOCTOR_PASSWORD CI/CD variable is required}"
+      : "${CI_RECEPTIONIST_USERNAME:?CI_RECEPTIONIST_USERNAME CI/CD variable is required}"
+      : "${CI_RECEPTIONIST_PASSWORD:?CI_RECEPTIONIST_PASSWORD CI/CD variable is required}"
+      cat > config/credentials.env << CRED_EOF
+LOCAL_HTTP_USER=${CI_LOCAL_HTTP_USER}
+LOCAL_HTTP_PASS=${CI_LOCAL_HTTP_PASS}
+HOSPITAL_NAME=${CI_HOSPITAL_NAME}
+SUPER_ADMIN_USERNAME=${CI_SUPER_ADMIN_USERNAME}
+SUPER_ADMIN_PASSWORD=${CI_SUPER_ADMIN_PASSWORD}
+NURSE_USERNAME=${CI_NURSE_USERNAME}
+NURSE_PASSWORD=${CI_NURSE_PASSWORD}
+COORDINATOR_USERNAME=${CI_COORDINATOR_USERNAME}
+COORDINATOR_PASSWORD=${CI_COORDINATOR_PASSWORD}
+DOCTOR_USERNAME=${CI_DOCTOR_USERNAME}
+DOCTOR_PASSWORD=${CI_DOCTOR_PASSWORD}
+RECEPTIONIST_USERNAME=${CI_RECEPTIONIST_USERNAME}
+RECEPTIONIST_PASSWORD=${CI_RECEPTIONIST_PASSWORD}
+CRED_EOF
+    - echo "✅ credentials.env đã được sinh tự động."
+  artifacts:
+    paths:
+      - node_modules/
+      - config/credentials.env
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+# ════════════════════════════════════════════════════
+# TEMPLATE: Job chạy test cho 1 file Excel
+# ════════════════════════════════════════════════════
+# Mỗi job test ghi Playwright HTML report ra thư mục riêng:
+#   reports/html-report-{REPORT_SLUG}/
+# Và JUnit XML report tại:
+#   reports/junit-{REPORT_SLUG}.xml
+# ════════════════════════════════════════════════════
+.test_template: &test_template
+  stage: test
+  script:
+    - |
+      echo "══════════════════════════════════════════════════"
+      echo "🎯 Test Suite: ${TEST_FILE_NAME}"
+      echo "📂 File: ${EXCEL_PATH}"
+      echo "🌐 Env:  ${TEST_ENV}"
+      echo "📊 Report: reports/html-report-${REPORT_SLUG}/"
+      echo "══════════════════════════════════════════════════"
+    - |
+      xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+        npx playwright test tests/main.spec.ts
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - data/
+    reports:
+      junit: reports/junit-${REPORT_SLUG}.xml
+    expire_in: 7 days
+  allow_failure: true
+  timeout: 30m
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+# ════════════════════════════════════════════════════
+# STAGE 2: CÁC JOB TEST — Mỗi job = 1 file Excel L3
+# ════════════════════════════════════════════════════
+
+# ─── 9.1 Sàng lọc ─────────────────────────────────
+
+test_9.1.1_dieu_phoi:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.1_Sang_loc/Master_Test_Suite_9.1.1_Dieu_Phoi.xlsx"
+    TEST_FILE_NAME: "9.1.1 Điều phối"
+    REPORT_SLUG: "9_1_1_dieu_phoi"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_1_1_dieu_phoi"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_1_1_dieu_phoi.xml"
+
+test_9.1.2_danh_gia_ban_dau:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.1_Sang_loc/Master_Test_Suite_9.1.2_Danh_Gia_Ban_Dau.xlsx"
+    TEST_FILE_NAME: "9.1.2 Đánh giá ban đầu"
+    REPORT_SLUG: "9_1_2_danh_gia_ban_dau"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_1_2_danh_gia_ban_dau"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_1_2_danh_gia_ban_dau.xml"
+  needs:
+    - job: test_9.1.1_dieu_phoi
+      optional: true
+
+test_9.1.3_kham_sang_loc:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.1_Sang_loc/Master_Test_Suite_9.1.3_Kham_Sang_Loc.xlsx"
+    TEST_FILE_NAME: "9.1.3 Khám sàng lọc"
+    REPORT_SLUG: "9_1_3_kham_sang_loc"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_1_3_kham_sang_loc"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_1_3_kham_sang_loc.xml"
+  needs:
+    - job: test_9.1.2_danh_gia_ban_dau
+      optional: true
+
+test_9.1.5_goi_kh_tra_cuu:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.1_Sang_loc/Master_Test_Suite_9.1.5_Goi_KH_Tra_Cuu.xlsx"
+    TEST_FILE_NAME: "9.1.5 Gọi KH tra cứu"
+    REPORT_SLUG: "9_1_5_goi_kh_tra_cuu"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_1_5_goi_kh_tra_cuu"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_1_5_goi_kh_tra_cuu.xml"
+
+# ─── 9.2 Tiêm chủng ───────────────────────────────
+
+test_9.2.1_ds_cho_tiem:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.2_Tiem_Chung/Master_Test_Suite_9.2.1_Ds_Cho_Tiem.xlsx"
+    TEST_FILE_NAME: "9.2.1 Ds chờ tiêm"
+    REPORT_SLUG: "9_2_1_ds_cho_tiem"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_2_1_ds_cho_tiem"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_2_1_ds_cho_tiem.xml"
+  needs:
+    - job: test_9.1.3_kham_sang_loc
+      optional: true
+
+test_9.2.2_xac_nhan_tiem:
+  <<: *test_template
+  variables:
+    EXCEL_PATH: "data/Tiem_Chung/L3_Low_Level/9.2_Tiem_Chung/Master_Test_Suite_9.2.2_Xac_Nhan_Tiem.xlsx"
+    TEST_FILE_NAME: "9.2.2 Xác nhận tiêm"
+    REPORT_SLUG: "9_2_2_xac_nhan_tiem"
+    PLAYWRIGHT_HTML_REPORT: "reports/html-report-9_2_2_xac_nhan_tiem"
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: "reports/junit-9_2_2_xac_nhan_tiem.xml"
+  needs:
+    - job: test_9.2.1_ds_cho_tiem
+      optional: true
+
+# ════════════════════════════════════════════════════
+# STAGE 3: TỔNG HỢP REPORT → GitLab Pages
+# ════════════════════════════════════════════════════
+# Dashboard tự động liệt kê tất cả Playwright HTML report
+# từ các job test, hiển thị trạng thái PASS/FAIL.
+# ════════════════════════════════════════════════════
+pages:
+  stage: report
+  allow_failure: true
+  needs:
+    - job: test_9.1.1_dieu_phoi
+      artifacts: true
+      optional: true
+    - job: test_9.1.2_danh_gia_ban_dau
+      artifacts: true
+      optional: true
+    - job: test_9.1.3_kham_sang_loc
+      artifacts: true
+      optional: true
+    - job: test_9.1.5_goi_kh_tra_cuu
+      artifacts: true
+      optional: true
+    - job: test_9.2.1_ds_cho_tiem
+      artifacts: true
+      optional: true
+    - job: test_9.2.2_xac_nhan_tiem
+      artifacts: true
+      optional: true
+  script:
+    - mkdir -p public
+    # Copy từng Playwright HTML report vào thư mục riêng trên Pages
+    - |
+      for dir in reports/html-report-*; do
+        if [ -d "$dir" ]; then
+          slug=$(basename "$dir" | sed 's/html-report-//')
+          mkdir -p "public/${slug}"
+          cp -r "$dir"/* "public/${slug}/" 2>/dev/null || true
+          echo "📂 Copied: $dir → public/${slug}/"
+        fi
+      done
+    # Tạo Dashboard tổng hợp với trạng thái PASS/FAIL từ JUnit XML
+    - |
+      cat > public/index.html << 'HEADER'
+      <!DOCTYPE html>
+      <html><head><title>QA Automation Dashboard</title>
+      <meta charset="utf-8">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h1 { color: #38bdf8; font-size: 1.8rem; margin-bottom: 8px; }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 0.95rem; }
+        .info-bar { display: flex; gap: 20px; background: #1e293b; padding: 16px 20px; border-radius: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .info-item { font-size: 0.9rem; }
+        .info-item strong { color: #38bdf8; }
+        .grid { display: grid; gap: 16px; }
+        .card { background: #1e293b; border-radius: 12px; padding: 20px; border-left: 5px solid #334155;
+                transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: block; }
+        .card:hover { transform: translateX(6px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .card.pass { border-left-color: #22c55e; }
+        .card.fail { border-left-color: #ef4444; }
+        .card.skip { border-left-color: #eab308; }
+        .card.nodata { border-left-color: #64748b; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-title { font-weight: 700; font-size: 1.05rem; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .badge.pass { background: #166534; color: #86efac; }
+        .badge.fail { background: #7f1d1d; color: #fca5a5; }
+        .badge.skip { background: #713f12; color: #fde68a; }
+        .badge.nodata { background: #334155; color: #94a3b8; }
+        .stats { color: #94a3b8; font-size: 0.85rem; }
+        .footer { text-align: center; color: #475569; margin-top: 40px; font-size: 0.8rem; }
+      </style></head><body><div class="container">
+      <h1>🛡️ QA Automation Dashboard</h1>
+      <p class="subtitle">Kết quả kiểm thử tự động — Automated QA Dashboard</p>
+      <div class="info-bar">
+      HEADER
+    # Inject dynamic info
+    - echo "<div class='info-item'><strong>Env:</strong> ${TEST_ENV}</div>" >> public/index.html
+    - echo "<div class='info-item'><strong>Pipeline:</strong> #${CI_PIPELINE_ID}</div>" >> public/index.html
+    - echo "<div class='info-item'><strong>Branch:</strong> ${CI_COMMIT_REF_NAME}</div>" >> public/index.html
+    - echo "<div class='info-item'><strong>Commit:</strong> ${CI_COMMIT_SHORT_SHA}</div>" >> public/index.html
+    - echo "</div><div class='grid'>" >> public/index.html
+    # Sinh card cho từng module dựa trên JUnit XML
+    - |
+      for xml in reports/junit-*.xml; do
+        if [ ! -f "$xml" ]; then continue; fi
+        slug=$(basename "$xml" .xml | sed 's/junit-//')
+
+        # Parse JUnit XML để lấy số liệu
+        tests=$(grep -oP 'tests="\K[0-9]+' "$xml" 2>/dev/null | head -1 || echo "0")
+        failures=$(grep -oP 'failures="\K[0-9]+' "$xml" 2>/dev/null | head -1 || echo "0")
+        errors=$(grep -oP 'errors="\K[0-9]+' "$xml" 2>/dev/null | head -1 || echo "0")
+        skipped=$(grep -oP 'skipped="\K[0-9]+' "$xml" 2>/dev/null | head -1 || echo "0")
+        time_val=$(grep -oP 'time="\K[0-9.]+' "$xml" 2>/dev/null | head -1 || echo "0")
+        passed=$((tests - failures - errors - skipped))
+
+        # Tên hiển thị đẹp
+        display_name=$(echo "$slug" | sed 's/_/ /g; s/\b\(.\)/\u\1/g' | sed 's/^//')
+
+        # Xác định trạng thái
+        if [ "$failures" -gt 0 ] || [ "$errors" -gt 0 ]; then
+          status="fail"
+          badge_text="❌ FAIL"
+        elif [ "$tests" -eq 0 ]; then
+          status="nodata"
+          badge_text="⏭️ NO DATA"
+        elif [ "$skipped" -eq "$tests" ]; then
+          status="skip"
+          badge_text="⏭️ SKIPPED"
+        else
+          status="pass"
+          badge_text="✅ PASS"
+        fi
+
+        # Kiểm tra có report HTML không
+        report_link=""
+        if [ -d "public/${slug}" ]; then
+          report_link="${slug}/index.html"
+        fi
+
+        # Sinh HTML card
+        if [ -n "$report_link" ]; then
+          echo "<a href='${report_link}' class='card ${status}'>" >> public/index.html
+        else
+          echo "<div class='card ${status}'>" >> public/index.html
+        fi
+
+        cat >> public/index.html << CARD_CONTENT
+          <div class='card-header'>
+            <span class='card-title'>📋 ${display_name}</span>
+            <span class='badge ${status}'>${badge_text}</span>
+          </div>
+          <div class='stats'>
+            ✅ Passed: ${passed} | ❌ Failed: $((failures + errors)) | ⏭️ Skipped: ${skipped} | 📊 Total: ${tests} | ⏱️ ${time_val}s
+          </div>
+      CARD_CONTENT
+
+        if [ -n "$report_link" ]; then
+          echo "</a>" >> public/index.html
+        else
+          echo "</div>" >> public/index.html
+        fi
+      done
+    - |
+      cat >> public/index.html << 'FOOTER'
+      </div>
+      <div class="footer">
+        <p>Generated by unified-gui-testing-tool CI/CD Pipeline</p>
+      </div>
+      </div></body></html>
+      FOOTER
+    - echo "✅ Dashboard đã được tạo tại public/index.html"
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'

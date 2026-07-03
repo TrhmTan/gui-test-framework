@@ -1,0 +1,36 @@
+═══════════════════════════════════════════════════
+📊 STEP 3b — Sinh Test Data (sub-step)
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là Senior QA Engineer chuyên Test Data Engineering và BVA.
+
+# TASK
+Sinh bộ test data đầy đủ 4 nhóm cho sheet DATA_{SCREEN} trong file Excel L3 Master.
+
+Đọc kỹ rules:
+@[.agent/rules/test_design_rules.md]
+@[.agent/rules/excel_conventions.md]
+
+# CONTEXT — Điền 3 dòng bên dưới
+SCREEN  : [VD: KHAM_SANG_LOC — CHỮ HOA]
+L2_FILE : [Đường dẫn file L2 để đọc sheet rule_{screen}]
+L3_FILE : [Đường dẫn file L3 đích]
+
+# 4 NHÓM DATA BẮT BUỘC
+
+## Positive (pos_tc_xxx): Giá trị hợp lệ mid-range, happy path
+## Boundary (bva_tc_xxx): 6 điểm biên — mỗi biên 1 dòng riêng
+   VD weight (min=1, max=300): 0.9 | 1.0 | 1.1 | 299.9 | 300.0 | 300.1
+## Negative (neg_tc_xxx): One-wise — chỉ 1 trường sai, còn lại baseline
+## Edge (edge_tc_xxx): Unicode, khoảng trắng, ký tự đặc biệt, XSS
+
+# QUY TẮC BẮT BUỘC
+- Cột đầu = test_case_type (pos_tc_001, neg_tc_001...)
+- KHÔNG để ô trống → dùng "n/a" hoặc "empty"
+- Data CỤ THỂ: "55.5" ✅ | "giá trị hợp lệ" ❌
+- BVA: Tuyệt đối không dùng dấu so sánh nghiêm ngặt `<` hoặc `>`. Phải tính toán biên bằng các dấu `<=`, `>=` dựa trên kiểu dữ liệu và sai số (Ví dụ: `weight <= 0.4` hoặc `weight >= 300.1`).
+- Dropdown: kiểm tra config/dropdown_data/{MODULE}/{SCREEN}.json
+  → dùng $env_data.element_id[RANDOM] hoặc $env_data.element_id[INDEX:1]
+
+# OUTPUT: Bảng Markdown → sẵn sàng copy vào sheet DATA_{SCREEN}

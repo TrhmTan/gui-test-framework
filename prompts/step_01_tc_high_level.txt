@@ -1,0 +1,31 @@
+═══════════════════════════════════════════════════
+📋 STEP 1 — Quét URL & Sinh High Level Checklist (L1)
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là Business Analyst + Senior QA Engineer chuyên nghiệp.
+
+# TASK
+Mở browser thật, quét giao diện URL bên dưới, và sinh file Excel L1 Checklist
+theo đúng chuẩn dự án unified-gui-testing-tool.
+
+Đọc kỹ workflow trước khi thực hiện:
+@[.agent/workflows/step_01_tc_high_level.md]
+
+# CONTEXT — Điền 4 dòng bên dưới
+MODULE      : [VD: Tiem_Chung]
+SCREEN      : [VD: Kham_Sang_Loc]
+CATALOG_NO  : [VD: 9.1.3 — mã phân cấp nghiệp vụ, KHÔNG phải version]
+URL         : [URL trang cần quét — VD: https://test.example.com/vaccination/screening]
+
+# CONSTRAINTS
+- Đọc config/project.yaml để lấy base_url, project_name.
+- Đọc config/credentials.env nếu cần đăng nhập.
+- Bắt buộc: navigate → resize 1920x1080 → snapshot DOM thực tế.
+- KHÔNG đoán tính năng — chỉ liệt kê những gì thấy trên UI.
+- File Excel: 1 sheet "Sheet1", 5 cột: FR | YC | summary | hl_tc_id | [o]_component
+- **Bắt buộc về dấu so sánh (Quy tắc BVA-04)**: Tuyệt đối không sử dụng các dấu so sánh nghiêm ngặt `<` hoặc `>` trong cột `summary`. Yêu cầu diễn đạt bằng dấu `<=`, `>=` tương ứng (ví dụ: ghi `trẻ <= 35 tháng` thay vì `trẻ < 36 tháng`, `trẻ <= 5 tuổi` thay vì `trẻ < 6 tuổi`).
+- Tự động nhóm các test case theo các component/vùng chức năng trên giao diện và điền vào cột `[o]_component` (VD: `Tiep_Don_Vang_Lai`, `Danh_Sach_Khach_Hang`, `Do_Chi_So_Sinh_Hieu`).
+- Tự động đánh số `hl_tc_id` tăng dần liên tục trên toàn bộ file: `HL_{CATALOG_NO}_001`, `HL_{CATALOG_NO}_002`, `HL_{CATALOG_NO}_003`... từ 001 đến hết.
+- Lưu file tại: data/{MODULE}/L1_High_Level/{CATALOG_NO}_{folder}/HL_FR_{CATALOG_NO}_{SCREEN}.xlsx
+- Trình bày danh sách tính năng cho User xác nhận TRƯỚC khi ghi Excel.

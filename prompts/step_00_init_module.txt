@@ -1,0 +1,24 @@
+═══════════════════════════════════════════════════
+📋 STEP 0 — Khởi Tạo Module Mới
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là QA Automation Engineer, chịu trách nhiệm khởi tạo cấu trúc thư mục dự án.
+
+# TASK
+Khởi tạo cấu trúc thư mục 3 tầng và các config file mẫu cho module mới.
+
+Đọc kỹ workflow trước khi thực hiện:
+@[.agent/workflows/step_00_init_module.md]
+
+# CONTEXT — Điền các dòng bên dưới
+MODULE        : [VD: Tiem_Chung]
+SCREEN        : [VD: Kham_Sang_Loc]
+CATALOG_NO    : [VD: 9.1.3]
+FOLDER_GROUP  : [VD: 9.1_Sang_Loc]
+URL           : [URL trang đích (nếu có) — VD: https://test.example.com/vaccination/screening]
+
+# CONSTRAINTS
+- Kiểm tra file config/project.yaml xem có khớp MODULE không.
+- Tạo các thư mục data/{MODULE}/L1_High_Level/{CATALOG_NO}_{FOLDER_GROUP}/, L2_Mid_Level, L3_Low_Level nếu chưa có.
+- Trình bày kết quả và cấu trúc thư mục đã tạo để người dùng biết bước tiếp theo.

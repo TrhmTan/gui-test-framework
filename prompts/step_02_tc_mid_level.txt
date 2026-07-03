@@ -1,0 +1,39 @@
+═══════════════════════════════════════════════════
+📋 STEP 2 — Sinh Mid Level Test Plan (L2) từ L1
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là Senior QA Engineer, chuyên về Excel-Driven Test Framework.
+
+# TASK
+Đọc file L1 Checklist + quét DOM thực tế lấy business rules →
+sinh file Excel L2 Mid-Level gồm 2 sheet: test_case + rule.
+
+Đọc kỹ workflow + skill trước khi thực hiện:
+@[.agent/workflows/step_02_tc_mid_level.md]
+@[.agent/skills/skill_l2_test_plan_generator.md]
+
+# CONTEXT — Điền 4 dòng bên dưới
+MODULE      : [VD: Tiem_Chung]
+SCREEN      : [VD: Kham_Sang_Loc]
+CATALOG_NO  : [VD: 9.1.3]
+URL         : [URL hệ thống để verify UI + lấy business rules]
+
+# TÙY CHỌN — AI tự tìm nếu để trống
+L1_FILE : [để trống = AI tìm theo MODULE/CATALOG_NO, hoặc chỉ định đường dẫn]
+
+# CONSTRAINTS
+- Đọc config/project.yaml để biết project_name và base_url.
+- Quét DOM lấy attribute: min, max, maxlength, pattern, required.
+- Trình bày bảng rules cho User xác nhận TRƯỚC khi sinh Excel (RULE-03).
+- Áp dụng RULE-04 (URL Scope Lock & Emergency Stop) [CRITICAL]: Chỉ thao tác quét DOM trên đúng URL mục tiêu. CẤM click vào Sidebar, Top Navigation, Header hoặc menu điều hướng. CẤM tự ý click nút Lưu, Gửi, Ký số hoặc Xác nhận (Submit) các form làm thay đổi dữ liệu trên hệ thống. Nếu bị chuyển hướng lệch URL mục tiêu, browser subagent bắt buộc phải DỪNG (STOP) thực thi lập tức để tránh ảnh hưởng đến trình duyệt thực tế của người dùng.
+- Sheet rule_{screen}: 7 cột — Trường thông tin | Bắt buộc (y/n) | Kiểu điều khiển | Kiểu dữ liệu | Vùng Hợp Lệ | Vùng Không Hợp Lệ | Note (TBD/TBU)
+  * Kiểu điều khiển: textbox, dropdown list (CẤM dùng select), textarea, checkbox, radio.
+  * Cột Vùng Không Hợp Lệ: Tuyệt đối KHÔNG ghi n/a hoặc để trống.
+  * Cột Vùng Hợp Lệ và Vùng Không Hợp Lệ: Bắt buộc dùng các toán tử so sánh toán học và logic >=, <=, =, != (Ví dụ: `temp <= 29.9, temp >= 43.1` thay vì `temp <= 29.9 hoặc temp >= 43.1`). Dùng dấu phẩy `,` thay thế hoàn toàn cho từ "hoặc" tiếng Việt để ngăn cách các biên lỗi.
+- Sheet test_case_{screen}: 9 cột — FR | YC | hl_tc_id | ml_tc_id | title | preconditions | steps | test_data | expected
+- Tuyệt đối CẤM sử dụng gộp ô (Merge Cells). Các cột thông tin chung (FR, YC, hl_tc_id, ml_tc_id, title, preconditions) chỉ được ghi ở hàng step đầu tiên của test case đó, các hàng step tiếp theo thuộc cùng test case để trống hoàn toàn ở các cột này. KHÔNG tạo dòng tóm tắt dư thừa.
+- Chỉ ghi expected ở step thực hiện việc kiểm tra (ví dụ step: check_status, check_value), các step hành động khác bắt buộc để trống expected.
+- Cột test_data bắt buộc phải sử dụng tham chiếu biến dạng `$data_{MODULE}.{column_name}` cho từng trường thông tin được nhập liệu, tuyệt đối cấm ghi giá trị cứng (hardcode) thực tế.
+- Mỗi TC negative: chỉ 1 field sai (One-wise).
+- Lưu file: data/{MODULE}/L2_Mid_Level/{CATALOG_NO}_{folder}/ML_TC_{CATALOG_NO}_{SCREEN}.xlsx

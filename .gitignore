@@ -1,0 +1,38 @@
+venv/
+__pycache__/
+*.pyc
+reports/
+screenshots/
+.vscode/
+node_modules/
+node_modules_broken_*/
+~$*
+playwright-report/
+test-results/
+.env
+.run/
+scratch/
+tests/scratch_debug_locator.spec.ts
+
+# Credentials - KHONG commit len repo (config/credentials.env.example IS committed —
+# it only contains SauceDemo's publicly-published QA-practice test accounts)
+config/credentials.env
+
+
+# Gemini temp files
+.gemini-tmp/
+.gemini/
+
+# Python virtual environment
+.venv/
+venv/
+
+# User documents - KHONG commit len repo
+my-document/
+
+# Temporary and backup files
+tmp/
+*-OLD.xlsx
+
+# Exclude docs folder from git
+docs/

@@ -1,0 +1,43 @@
+{
+  "name": "unified-gui-testing-tool",
+  "version": "1.0.0",
+  "description": "Unified GUI Testing Tool (Excel & Config Driven + AI assisted)",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "npx ts-node scripts/run-test.ts",
+    "run:all": "npx ts-node scripts/run-all.ts",
+    "init:module": "npx ts-node scripts/init-module.ts",
+    "create:common": "npx ts-node scripts/create-common-suite.ts",
+    "create:l2-suite": "npx ts-node scripts/create-level2-suite.ts",
+    "format:excel": "npx ts-node scripts/format-excel.ts",
+    "generate:master-suite": "npx ts-node scripts/generate-master-suite.ts",
+    "capture:info": "npx ts-node scripts/capture-checklist-info.ts",
+    "capture:screenshots": "npx ts-node scripts/capture-requirements-screenshots.ts",
+    "auto:locator": "npx ts-node scripts/auto_locator.ts",
+    "report:open": "playwright show-report reports/playwright-report"
+  },
+  "keywords": [
+    "playwright",
+    "excel",
+    "data-driven",
+    "keyword-driven",
+    "automation",
+    "testing"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "exceljs": "^3.4.0",
+    "js-yaml": "^5.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.19.43",
+    "cross-env": "^7.0.3",
+    "pdf-parse": "^1.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.4.5"
+  }
+}

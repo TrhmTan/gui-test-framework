@@ -1,0 +1,39 @@
+# ════════════════════════════════════════════════════════════════
+# ⚡ ĐỔI MODULE → CHỈ CẦN SỬA 2 FILE:
+#   1. File này (project.yaml) → sửa project_name, base_url, data_dir
+#   2. config/credentials.env  → sửa tài khoản đăng nhập
+# ════════════════════════════════════════════════════════════════
+# PROJECT CONFIGURATION — unified-gui-testing-tool
+# ════════════════════════════════════════════════════════════════
+# File này là NƠI DUY NHẤT bạn cần thay đổi khi chuyển dự án.
+# AI Agent + Test Runner sẽ tự đọc file này để biết context.
+# ════════════════════════════════════════════════════════════════
+
+# ── Thông tin Module (= dự án con) ───────────────────────────
+project_name: "SauceDemo"                     # Tên thư mục trong data/
+project_label: "SauceDemo Portfolio Demo"     # Tên hiển thị cho báo cáo
+domain: "ecommerce"                            # set to your project's domain, e.g. healthcare, ecommerce, fintech
+
+# ── URL theo môi trường ────────────────────────────────────
+base_url:
+  local: "https://www.saucedemo.com"
+  test: "https://www.saucedemo.com"
+  sit: "https://www.saucedemo.com"
+  # uat: ""                                   # Thêm khi cần
+  # prod: ""                                  # Thêm khi cần
+
+# ── Môi trường mặc định ──────────────────────────────────
+default_env: "test"
+
+# ── Đường dẫn dữ liệu ───────────────────────────────────
+data_dir: "data/SauceDemo"                    # Thư mục data chính
+global_config: "config/global/preconditions.xlsx"  # Chứa: tc_precondition, element, page
+common_rules: "config/global/common_rules.xlsx"
+
+
+# ── Cấu hình trình duyệt ──────────────────────────────────
+headless: true                                # true = ẩn trình duyệt | false = hiện trình duyệt
+default_timeout: 10000                         # Timeout mặc định (ms)
+
+# ── Danh sách cột DATA cần lặp chéo tự động (ví dụ: cột mà giá trị cần giữ nguyên/dùng chung xuyên suốt các bước) ──
+cross_iteration_columns: []

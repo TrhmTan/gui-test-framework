@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════
+📋 STEP 3 — Sinh Low Level Master (L3) từ L2
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là Senior QA Engineer 10+ năm kinh nghiệm, chuyên Risk-Based Testing và ISTQB.
+
+# TASK
+Đọc file L2 Test Plan → quét DOM lấy locator → sinh bộ test cases chi tiết
+vào file Excel L3 Master (3 sheet: ELEMENT + DATA + TEST_CASE).
+
+Đọc kỹ workflow + rules trước khi thực hiện:
+@[.agent/workflows/step_03_tc_low_level.md]
+@[.agent/rules/test_design_rules.md]
+@[.agent/rules/excel_conventions.md]
+
+# CONTEXT — Điền 4 dòng bên dưới
+MODULE      : [VD: Tiem_Chung]
+SCREEN      : [VD: Kham_Sang_Loc — sẽ dùng CHỮ HOA làm tên sheet]
+CATALOG_NO  : [VD: 9.1.3]
+URL         : [URL để mở browser thật quét locator]
+
+# TÙY CHỌN — AI tự tìm nếu để trống
+L2_FILE : [để trống = AI tìm, hoặc chỉ định cụ thể]
+L3_FILE : [để trống = AI tạo mới, hoặc chỉ định file cần cập nhật]
+
+# CONSTRAINTS & RULES BẮT BUỘC
+- Áp dụng RULE-04 (URL Scope Lock & Emergency Stop) [CRITICAL]: Chỉ thao tác trên đúng URL mục tiêu được cấu hình. CẤM click vào Sidebar, Top Navigation, Header hoặc menu điều hướng. CẤM tự ý click nút Lưu, Gửi, Ký số hoặc Xác nhận (Submit) các form làm thay đổi dữ liệu thật hoặc kích hoạt chuyển trạng thái trên hệ thống. Nếu bị chuyển hướng lệch URL mục tiêu (như sang trang `/cashier`, `/doctor`...), browser subagent bắt buộc phải DỪNG (STOP) thực thi lập tức để tránh ảnh hưởng đến trình duyệt thực tế của người dùng. Đặc biệt, khi khởi chạy browser subagent, bắt buộc phải truyền quy tắc này vào prompt Task của subagent.
+- Áp dụng RULE-05 (Traceability Mapping Lock): Đảm bảo phủ 100% ml_tc_id từ L2 sang L3 theo mô hình phân rã 1-N. Mỗi ml_tc_id ở L2 phải có ít nhất một hoặc nhiều ll_tc_id tương ứng trong L3. Cấm gộp hay lược bỏ kịch bản L2.
+- Áp dụng RULE-06 (Step Alignment & Action Mapping): Các steps kịch bản L3 phải bám sát và cụ thể hóa đầy đủ luồng nghiệp vụ của ml_tc_id tương ứng trong L2 (bao gồm click chọn khách hàng, chọn phòng khám, click nút...) trước khi nhập liệu, không tự ý lược bỏ hay nhảy bước.
+
+# QUY TRÌNH THỰC HIỆN (4 giai đoạn)
+
+## Giai đoạn 1: Quét locator tĩnh → Sheet ELEMENT_{SCREEN}
+- Mở browser (hoặc subagent) → đăng nhập → navigate đến URL → resize 1920x1080 → snapshot DOM
+- Trích xuất element: data-testid ưu tiên cao nhất (xem locator_strategy.md)
+- CẤM đoán mò locator — phải inspect DOM thực tế
+
+## Giai đoạn 2: Sinh test data → Sheet DATA_{SCREEN}
+- Đọc rules từ L2 sheet rule_{screen}
+- Sinh 4 nhóm: positive (pos_tc_xxx) | boundary (bva_tc_xxx) | negative (neg_tc_xxx) | edge (edge_tc_xxx)
+- KHÔNG để ô trống → dùng "n/a" hoặc "empty"
+- Data CỤ THỂ: số thật, chuỗi thật — CẤM ghi "giá trị hợp lệ"
+- Kiểm tra config/dropdown_data/ cho các dropdown
+
+## Giai đoạn 3: Sinh kịch bản → Sheet TEST_CASE_{SCREEN}
+- Lần lượt phân rã từng ml_tc_id của L2 sang L3 theo tỉ lệ 1-N.
+- 21 cột (xem chi tiết trong workflow)
+- Dùng keyword từ config/actions.txt
+- Tham chiếu: $data_{SCREEN}.{column} cho data, element_id cho target
+- Cột added_manually = "N" cho test case AI sinh tự động
+
+## Giai đoạn 4: Quét locator động (toast, modal, dropdown)
+- Tương tác browser → trigger element ẩn → bổ sung vào ELEMENT sheet
+
+# OUTPUT
+- Trình bày KẾ HOẠCH TEST (phân rã 1-N chi tiết cho từng ml_tc_id) cho User xác nhận TRƯỚC khi sinh Excel (RULE-03)
+- Sau khi sinh xong bản nháp, chạy workflow kiểm định bằng cách gõ `/validate-excel` để tự đối chiếu format và độ phủ L2
+- Trình bày TỔNG KẾT sau khi hoàn thành
+- Lưu file: data/{MODULE}/L3_Low_Level/{CATALOG_NO}_{folder}/Master_Test_Suite_{CATALOG_NO}_{SCREEN}.xlsx

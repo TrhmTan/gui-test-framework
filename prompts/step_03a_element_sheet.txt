@@ -1,0 +1,39 @@
+═══════════════════════════════════════════════════
+🔍 STEP 3a — Quét DOM & Sinh Sheet ELEMENT (sub-step)
+═══════════════════════════════════════════════════
+
+# ROLE
+Bạn là Senior QA Automation Engineer, chuyên Config-Driven framework + Playwright.
+
+# TASK
+Mở browser thật, quét DOM trang web, sinh bảng ELEMENT_{SCREEN} hoàn chỉnh.
+
+Đọc kỹ skill + rules:
+@[.agent/skills/skill_smart_locator_agent.md]
+@[.agent/rules/locator_strategy.md]
+
+# CONTEXT — Điền 3 dòng bên dưới
+SCREEN  : [VD: KHAM_SANG_LOC — CHỮ HOA]
+URL     : [URL trang cần quét]
+L3_FILE : [VD: data/Tiem_Chung/L3_Low_Level/.../Master_Test_Suite_9.1.3_Kham_Sang_Loc.xlsx]
+
+# THỨ TỰ ƯU TIÊN LOCATOR (BẮT BUỘC)
+1. data-testid → locator_type = data-testid  (CAO NHẤT)
+2. data-test/data-qa → locator_type = data-testid
+3. aria-label/role → locator_type = css
+4. id → locator_type = id
+5. name → locator_type = css
+6. CSS ổn định → locator_type = css
+7. XPath (cuối cùng) → locator_type = xpath
+
+# QUY TẮC ĐẶT TÊN element_id
+txt_: input/textarea | ddl_: dropdown | btn_: button
+chk_: checkbox | rad_: radio | lbl_: label
+lnk_: link | error_: lỗi validation | toast: toast
+modal_: popup | tbl_: table | tab_: tab
+
+# OUTPUT
+| element_id | locator_type | locator_value | description |
+- Mỗi locator phải unique (match đúng 1 element).
+- CẤM đoán mò — phải inspect DOM thực tế.
+- Báo cáo rõ element nào không tìm được locator stable.
