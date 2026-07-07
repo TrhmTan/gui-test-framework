@@ -69,28 +69,6 @@ async function executePrecondition(
     throw new Error(`[ElementVerifier] Lỗi: Không tìm thấy kịch bản tiền đề [${currentPreId}] trong PRECONDITION.`);
   }
 
-  // Ghi đè locator các phần tử login trên local để khớp với giao diện thực tế
-  if (currentEnv === 'local') {
-    const elementsMap = (locatorResolver as any).elementsMap;
-    if (elementsMap) {
-      elementsMap.set('txt_username', {
-        element_id: 'txt_username',
-        locator_type: 'id',
-        locator_value: 'email'
-      });
-      elementsMap.set('txt_password', {
-        element_id: 'txt_password',
-        locator_type: 'id',
-        locator_value: 'password'
-      });
-      elementsMap.set('btn_login', {
-        element_id: 'btn_login',
-        locator_type: 'css',
-        locator_value: 'button:has-text("Đăng nhập với SSO")'
-      });
-      console.log('🔧 [Precondition Local Config] Đã tự động ghi đè locator các phần tử login cho môi trường local (txt_username -> id=email, btn_login -> Đăng nhập với SSO).');
-    }
-  }
 
   const contextData = {};
   

@@ -262,7 +262,10 @@ export class ResultWriter {
 
       // Match test case ID and step number
       if (isTargetTc && stepCell === stepNum) {
-        const isCheckAction = result.action ? ['check_status', 'check_value'].includes(result.action.toLowerCase()) : false;
+        // assert_url cũng là action xác thực (verification) — có expected/observed và PASS/FAIL,
+        // phải ghi kết quả như các action check_* (thiếu nó → TC chỉ toàn navigation/assert_url
+        // sẽ trắng kết quả và bị reporter tính NOT RUN dù đã PASS).
+        const isCheckAction = result.action ? ['check_status', 'check_value', 'check_visual', 'check_a11y', 'assert_url'].includes(result.action.toLowerCase()) : false;
         const isFailed = result.status === 'FAILED';
         const isSkip = result.status === 'SKIP';
 

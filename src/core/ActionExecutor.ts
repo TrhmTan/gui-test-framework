@@ -22,6 +22,8 @@ import DblclickAction from './actions/DblclickAction';
 import SetContextAction from './actions/SetContextAction';
 import GetContextAction from './actions/GetContextAction';
 import CaptureTextAction from './actions/CaptureTextAction';
+import CheckVisualAction from './actions/CheckVisualAction';
+import CheckA11yAction from './actions/CheckA11yAction';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -101,6 +103,10 @@ export class ActionExecutor {
     this.handlers.set('set_context', new SetContextAction());
     this.handlers.set('get_context', new GetContextAction());
     this.handlers.set('capture_text', new CaptureTextAction());
+    // Visual regression testing (Playwright toHaveScreenshot)
+    this.handlers.set('check_visual', new CheckVisualAction());
+    // Accessibility testing (axe-core)
+    this.handlers.set('check_a11y', new CheckA11yAction());
   }
 
   /**

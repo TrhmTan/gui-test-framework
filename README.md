@@ -9,10 +9,12 @@ A **keyword-driven, Excel/config-driven UI automation framework** built on **Pla
 - **Two-file environment switching** — point the whole suite at a new project/target by editing only `config/project.yaml` (base URL per environment, domain label) and `config/credentials.env` (login accounts). No code changes.
 - **Three-tier test design (L1/L2/L3)** — business checklist → test plan → executable low-level steps with locators and data, so non-technical stakeholders can review/approve at the L1/L2 level before anything runs.
 - **Health-check fail-fast** — verifies the target environment is reachable before running, so a down server or missing VPN doesn't waste time on timeouts.
+- **Visual regression testing** — a `check_visual` keyword (pixel-diff via Playwright's `toHaveScreenshot()`) usable from the same Excel sheet as every other step, with optional dynamic-region masking and per-step threshold tuning. No separate tool or script to run.
+- **Accessibility (WCAG) testing** — a `check_a11y` keyword (axe-core under the hood) scans a page or a specific element for accessibility violations, with per-step rule/tag/severity filtering and a JSON report per run. Same Excel sheet, same engine, no separate audit tool.
 - **Reporting** — Playwright HTML report (pass/fail, screenshots, video/trace on failure) plus results written back into the original Excel file for non-technical stakeholders.
 - **AI-assisted authoring** (`.agent/`, `prompts/`) — a staged workflow (URL scan → L1 checklist → element/locator extraction → executable L3 steps) where an AI agent drafts the Excel content and a human reviews/approves it.
 
-**Proof of portability:** this framework was originally built for a healthcare client's internal system. All client-identifying data, credentials, and business logic have been removed and replaced with a working demo against the public site [saucedemo.com](https://www.saucedemo.com) — verified with a real passing run across **Chrome and Firefox**, with zero changes to the core engine. That's the point: the architecture doesn't assume any particular domain.
+**Proof of portability:** this framework was originally built for a healthcare client's internal system. All client-identifying data, credentials, and business logic have been removed and replaced with a working demo against the public site [saucedemo.com](https://www.saucedemo.com) — verified with a real passing run across **Chrome, Firefox, and WebKit (Safari engine)**, with zero changes to the core engine. That's the point: the architecture doesn't assume any particular domain or browser.
 
 **Stack:** Playwright, TypeScript, Excel (ExcelJS), Node.js.
 
@@ -36,6 +38,7 @@ unified-gui-testing-tool/
 │   ├── 00_Login/              # Thư mục chứa kịch bản và dữ liệu phục vụ test Login
 │   └── common/                # Thư mục chứa các file Excel test case dùng chung của từng phân hệ/module
 ├── reports/                   # Thư mục chứa kết quả chạy test (Excel kết quả, HTML report, screenshots)
+├── visual-baselines/          # Ảnh baseline cho keyword check_visual (visual regression) — commit vào Git
 ├── src/
 │   ├── core/
 │   │   ├── ExcelReader.ts     # Trình đọc dữ liệu kịch bản từ Excel
@@ -50,7 +53,7 @@ unified-gui-testing-tool/
 │   ├── verify-elements.spec.ts# Test kiểm tra tính hợp lệ của các Elements khai báo
 │   └── main.spec.ts           # Bộ khung thực thi các bước kiểm thử Playwright động
 ├── tsconfig.json              # Cấu hình TypeScript Compiler
-├── playwright.config.ts       # File cấu hình Playwright Test Runner (projects: chrome, firefox)
+├── playwright.config.ts       # File cấu hình Playwright Test Runner (projects: chrome, firefox, webkit)
 └── package.json               # Khai báo các thư viện phụ thuộc và scripts chạy test
 ```
 
@@ -73,9 +76,9 @@ npm install
 ```
 
 ### Bước 3: Cài đặt các trình duyệt Playwright
-Cài đặt nhân trình duyệt để Playwright có thể thực thi kịch bản. Framework mặc định dùng 2 project: `chrome` (Chrome thật cài trên máy) và `firefox` (bundle sẵn của Playwright):
+Cài đặt nhân trình duyệt để Playwright có thể thực thi kịch bản. Framework mặc định dùng 3 project: `chrome` (Chrome thật cài trên máy), `firefox` và `webkit` (đều là bundle sẵn của Playwright):
 ```bash
-npx playwright install firefox
+npx playwright install firefox webkit
 ```
 *(Project `chrome` dùng Google Chrome đã cài sẵn trên máy qua `channel: "chrome"` — không cần tải riêng.)*
 
@@ -164,7 +167,7 @@ flowchart LR
 ```bash
 npm test -- --file=data/SauceDemo/L3_Low_Level/Master_Test_Suite_SauceDemo.xlsx --module=saucedemo --env=test
 ```
-Mặc định chạy trên cả 2 project `chrome` và `firefox` (khai báo trong `playwright.config.ts`). Muốn chạy 1 browser duy nhất, thêm `--project=chrome` hoặc `--project=firefox` vào cuối lệnh.
+Mặc định chạy trên cả 3 project `chrome`, `firefox` và `webkit` (khai báo trong `playwright.config.ts`). Muốn chạy 1 browser duy nhất, thêm `--project=chrome`, `--project=firefox` hoặc `--project=webkit` vào cuối lệnh.
 
 ### 2. Qua CLI Runner động (`run.bat`, Windows)
 ```powershell
@@ -177,6 +180,73 @@ Ví dụ:
 .\run element saucedemo local     # Bước kiểm tra Element trước khi chạy thật
 .\run saucedemo local              # Thực thi kịch bản test trên môi trường local
 ```
+
+---
+
+## 🖼️ Visual Regression Testing (`check_visual`)
+
+Ngoài các keyword kiểm tra logic (`check_status`, `check_value`), framework hỗ trợ so sánh **ảnh chụp pixel-diff** để bắt các lỗi UI mà assertion văn bản không thấy được (lệch layout, vỡ CSS, sai màu, đè chữ...).
+
+### 1. Thêm bước `check_visual` vào sheet TEST_CASE (giống mọi keyword khác)
+
+| step | action | target | value | expected |
+|---|---|---|---|---|
+| 5 | check_visual | *(để trống)* | *(để trống)* | *(để trống)* |
+| 6 | check_visual | card_product_list | | mask:lbl_updated_at |
+| 7 | check_visual | | homepage_hero | threshold:0.05 |
+
+* **Target**: ID phần tử trong `ELEMENT` để chụp riêng 1 vùng, hoặc để trống / `page` để chụp toàn trang.
+* **Value**: tên file baseline tùy chọn (không bắt buộc — mặc định tự sinh `TCID_stepN_target.png`).
+* **Expected** (tùy chọn):
+  * `mask:element_id_1,element_id_2` — che các vùng có nội dung động (timestamp, avatar, số liệu realtime...) trước khi so sánh, tránh false positive.
+  * `threshold:0.05` (hoặc viết tắt `0.05`) — nới ngưỡng % pixel khác biệt cho phép, ghi đè giá trị mặc định `maxDiffPixelRatio: 0.01` khai báo trong `playwright.config.ts`.
+
+### 2. Tạo ảnh baseline lần đầu
+
+Lần chạy đầu tiên cho mỗi bước `check_visual` sẽ luôn FAILED vì chưa có ảnh gốc để so sánh — đây là hành vi đúng của Playwright, không phải lỗi. Chạy lại kèm cờ `--update-snapshots` để chấp nhận ảnh hiện tại làm baseline:
+
+```bash
+npm test -- --file=data/SauceDemo/L3_Low_Level/Master_Test_Suite_SauceDemo.xlsx --module=saucedemo --env=test --update-snapshots
+```
+
+Ảnh baseline được lưu tại `visual-baselines/` (đã cấu hình trong `playwright.config.ts`, **commit vào Git** — đây chính là "expected result" của bộ test, không phải file build tạm). Tên file tự động kèm theo browser (`chrome`/`firefox`/`webkit`) và platform, vì mỗi engine render khác nhau vài pixel — nghĩa là bạn cần chạy `--update-snapshots` **cho từng project** muốn hỗ trợ visual test.
+
+### 3. Các lần chạy sau
+
+Chạy bình thường như mọi test khác — `check_visual` tự so sánh ảnh hiện tại với baseline đã commit và trả PASSED/FAILED. Khi FAILED, ảnh `-actual`/`-diff`/`-expected` được ghi vào `reports/test-results/` để xem trực quan chỗ lệch (mở qua `npm run report:open`).
+
+**Lưu ý với test case data-driven (parameterized = Y):** baseline được đặt tên cố định theo `tc_id + step`, không tự thêm số thứ tự iteration. Nếu giao diện thực sự đổi theo từng bộ dữ liệu, hãy đặt tên riêng ở cột Value (có thể tham chiếu `$data_...`) cho mỗi iteration để tránh so sánh nhầm baseline.
+
+---
+
+## ♿ Accessibility Testing (`check_a11y`)
+
+Quét lỗi accessibility/WCAG bằng [axe-core](https://github.com/dequelabs/axe-core) — cùng bộ máy, cùng sheet Excel, không cần công cụ audit riêng.
+
+### 1. Thêm bước `check_a11y` vào sheet TEST_CASE
+
+| step | action | target | value | expected |
+|---|---|---|---|---|
+| 3 | check_a11y | *(để trống)* | *(để trống)* | *(để trống)* |
+| 4 | check_a11y | form_checkout | | tags:wcag2a,wcag2aa |
+| 5 | check_a11y | | | disable:color-contrast;exclude:.third-party-widget |
+| 6 | check_a11y | | | severity:critical,serious |
+
+* **Target**: ID phần tử trong `ELEMENT` để quét riêng 1 khu vực, hoặc để trống / `page` để quét toàn trang.
+* **Value**: tên file report JSON tùy chọn (không bắt buộc — mặc định tự sinh `a11y_TCID_stepN.json`).
+* **Expected** (tùy chọn, kết hợp bằng `;`):
+  * `disable:rule-id-1,rule-id-2` — tắt tạm các rule đã biết là false-positive hoặc chưa kịp fix.
+  * `exclude:.selector` — loại 1 vùng DOM khỏi phạm vi quét (banner quảng cáo, widget bên thứ 3 không kiểm soát được...).
+  * `tags:wcag2a,wcag2aa` — giới hạn chỉ chạy rule thuộc chuẩn WCAG chỉ định (mặc định: toàn bộ rule của axe-core).
+  * `severity:critical,serious` — chỉ coi là FAILED khi có vi phạm ở mức này trở lên (mặc định: fail với mọi mức, kể cả `minor`).
+
+### 2. Đọc kết quả
+
+* **PASSED**: cột Observed ghi rõ đã quét toàn trang hay 1 phần tử, ở mức severity nào.
+* **FAILED**: cột Observed liệt kê số lượng vi phạm theo mức độ + tóm tắt từng rule (id, mô tả, số phần tử ảnh hưởng).
+* **Chi tiết đầy đủ** (kể cả khi PASSED, phục vụ audit lâu dài): file JSON tại `reports/{run_id}/a11y/*.json` — chứa nguyên bản kết quả axe-core (`nodes`, `html`, `failureSummary`...) cho từng vi phạm.
+
+**Lưu ý:** axe-core bắt lỗi cấu trúc DOM/ARIA (thiếu `alt`, tương phản màu, thiếu label, thứ tự heading sai...) — không thay thế được kiểm thử với screen reader thật hoặc điều hướng bàn phím thủ công. Dùng làm lớp lọc tự động trước, không phải chứng nhận WCAG đầy đủ.
 
 ---
 

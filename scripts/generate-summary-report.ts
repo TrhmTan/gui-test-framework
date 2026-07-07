@@ -5,7 +5,7 @@ import * as fs from 'fs';
 interface TestCaseInfo {
   id: string;
   summary: string;
-  status: 'PASSED' | 'FAILED';
+  status: 'PASSED' | 'FAILED' | 'NOT_RUN';
   failedSteps: {
     step: string;
     action: string;
@@ -113,12 +113,18 @@ async function main() {
         testCases[currentTcId] = {
           id: currentTcId,
           summary: summary,
-          status: 'PASSED',
+          // Mặc định NOT_RUN — chỉ chuyển PASSED khi có ít nhất 1 step có kết quả thực.
+          // Tránh false positive: TC fail ở precondition (chưa ghi kết quả nào) hoặc TC
+          // đang OFF từng bị đếm nhầm là PASS.
+          status: 'NOT_RUN',
           failedSteps: []
         };
       }
 
       if (currentTcId && action) {
+        if (result && !result.toUpperCase().startsWith('FAIL') && testCases[currentTcId].status === 'NOT_RUN') {
+          testCases[currentTcId].status = 'PASSED';
+        }
         if (result.toUpperCase().startsWith('FAIL')) {
           testCases[currentTcId].status = 'FAILED';
           testCases[currentTcId].failedSteps.push({
@@ -139,13 +145,18 @@ async function main() {
   let totalCases = 0;
   let passCases = 0;
   let failCases = 0;
+  let notRunCases = 0;
   const failedCasesList: TestCaseInfo[] = [];
+  const notRunCasesList: TestCaseInfo[] = [];
 
   for (const tc of Object.values(testCases)) {
     totalCases++;
     if (tc.status === 'FAILED') {
       failCases++;
       failedCasesList.push(tc);
+    } else if (tc.status === 'NOT_RUN') {
+      notRunCases++;
+      notRunCasesList.push(tc);
     } else {
       passCases++;
     }
@@ -153,6 +164,7 @@ async function main() {
 
   const passRate = totalCases > 0 ? ((passCases / totalCases) * 100).toFixed(1) : '0.0';
   const failRate = totalCases > 0 ? ((failCases / totalCases) * 100).toFixed(1) : '0.0';
+  const notRunRate = totalCases > 0 ? ((notRunCases / totalCases) * 100).toFixed(1) : '0.0';
 
   // 4. Gom nhóm lỗi theo Failure Patterns
   const failurePatterns: { [patternKey: string]: FailurePattern } = {};
@@ -190,12 +202,19 @@ async function main() {
   md += `| :--- | :---: | :---: |\n`;
   md += `| **Tổng số test cases** | **${totalCases}** | **100%** |\n`;
   md += `| ĐẠT (PASS) ✅ | ${passCases} | ${passRate}% |\n`;
-  md += `| LỖI (FAIL) ❌ | ${failCases} | ${failRate}% |\n\n`;
+  md += `| LỖI (FAIL) ❌ | ${failCases} | ${failRate}% |\n`;
+  md += `| KHÔNG CHẠY (NOT RUN) ⚪ | ${notRunCases} | ${notRunRate}% |\n\n`;
+
+  if (notRunCases > 0) {
+    md += `> ⚠️ **${notRunCases} test case không có kết quả nào được ghi nhận** (đang OFF, không thuộc module filter, hoặc FAIL ngay từ precondition trước khi chạy step đầu tiên). Đối chiếu với console log/playwright report để xác định nguyên nhân: ${notRunCasesList.slice(0, 10).map(tc => `\`${tc.id}\``).join(', ')}${notRunCasesList.length > 10 ? '...' : ''}\n\n`;
+  }
 
   md += `## 🔍 Phân Tích Nguyên Nhân Thất Bại (Failure Causes & Patterns)\n\n`;
-  
-  if (failCases === 0) {
-    md += `🎉 **Tuyệt vời! Tất cả các test cases đều PASS.** Không phát hiện lỗi.\n\n`;
+
+  if (failCases === 0 && passCases > 0) {
+    md += `🎉 **Tất cả ${passCases} test cases ĐÃ CHẠY đều PASS.** Không phát hiện lỗi trong các step được ghi nhận.\n\n`;
+  } else if (failCases === 0) {
+    md += `⚠️ **Không có test case nào được ghi nhận kết quả.** Kiểm tra lại lượt chạy — có thể toàn bộ đã fail từ precondition.\n\n`;
   } else {
     md += `Hệ thống đã tự động phân tích và gom nhóm **${failCases}** test cases lỗi thành các nhóm lỗi chung dưới đây:\n\n`;
     

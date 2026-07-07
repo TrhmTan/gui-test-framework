@@ -297,6 +297,8 @@ Danh sách keyword đăng ký trong [actions.txt](file:///c:/Users/your-username
 | `press_key` | Nhấn phím (value = `Enter`, `Tab`, `Escape`) |
 | `capture` | Chụp ảnh màn hình |
 | `assert_url` | Kiểm tra URL hiện tại |
+| `check_visual` | Visual regression — so sánh pixel-diff với ảnh baseline (target = element_id hoặc `page`, expected = `mask:...`/`threshold:...` tùy chọn). Lần đầu chạy `--update-snapshots` để tạo baseline. |
+| `check_a11y` | Quét lỗi accessibility/WCAG bằng axe-core (target = element_id hoặc `page`, expected = `disable:...`/`exclude:...`/`tags:...`/`severity:...` tùy chọn). |
 
 ---
 

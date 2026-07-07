@@ -316,12 +316,7 @@ async function performLoginAndSaveSession(
       // Phân giải locator động
       let locatorStr = locatorResolver.resolve(target, value);
 
-      // Xử lý override locator cho local env
-      if (appConfig.currentEnv === 'local') {
-        if (target === 'txt_username') locatorStr = '#email';
-        else if (target === 'txt_password') locatorStr = '#password';
-        else if (target === 'btn_login') locatorStr = 'button:has-text("Đăng nhập với SSO")';
-      }
+
 
       console.log(`[GlobalSetup] Step ${step.step}: ${action} on target: ${target} (${locatorStr || 'N/A'}) with value: "${value}"`);
 

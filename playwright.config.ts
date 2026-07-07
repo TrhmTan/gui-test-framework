@@ -37,7 +37,19 @@ export default defineConfig({
   timeout: 120 * 1000,
   expect: {
     timeout: 10 * 1000,
+    // Ngưỡng mặc định cho keyword check_visual (visual regression) — 1% pixel khác biệt
+    // được phép trước khi coi là FAILED (chống flaky do anti-aliasing/font rendering).
+    // Có thể ghi đè theo từng step qua cột Expected: "threshold:0.05".
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,
+      animations: 'disabled',
+    },
   },
+  // Ảnh baseline cho check_visual được lưu ở thư mục riêng thay vì cạnh file spec,
+  // dễ review trong PR/commit. Tên file tự động kèm project (chrome/firefox/webkit) +
+  // platform vì mỗi engine render khác nhau vài pixel — bắt buộc phải tạo baseline
+  // riêng cho từng browser bằng --update-snapshots.
+  snapshotPathTemplate: './visual-baselines/{testFilePath}/{arg}-{projectName}-{platform}{ext}',
   /* Chạy tuần tự các file test để tránh xung đột I/O ghi đè kết quả file Excel */
   fullyParallel: false,
   workers: 1,
@@ -92,6 +104,16 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
+      },
+    },
+    // 'webkit' project: Playwright's bundled WebKit (Safari engine). Completes true
+    // cross-browser coverage (Chromium + Gecko + WebKit) with zero engine changes.
+    // Install once with: npx playwright install webkit
+    // Run with:          npx playwright test --project=webkit
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
       },
     },
   ],

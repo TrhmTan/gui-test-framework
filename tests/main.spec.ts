@@ -369,7 +369,7 @@ async function runTestSteps(opts: RunStepsOptions): Promise<{ passed: boolean; f
 
       return { passed: false, failedStep: step.step, failureReason: observedValue };
     } else {
-      const isCheckStatus = step.action.toLowerCase() === 'check_status' || step.action.toLowerCase() === 'check_value';
+      const isCheckStatus = ['check_status', 'check_value', 'check_visual', 'check_a11y', 'assert_url'].includes(step.action.toLowerCase());
       const absoluteScreenshotPath = (stepResult.screenshotPath && isCheckStatus)
         ? path.resolve(activeRunInfo.runReportDir, stepResult.screenshotPath)
         : undefined;
@@ -419,8 +419,12 @@ async function executePrecondition(
   if (currentPreId === 'pre_super_admin_login_success' && fs.existsSync(STORAGE_STATE_PATH)) {
     let currentUrl = page.url();
     if (currentUrl === 'about:blank') {
-      const tcPage = pages.find((p: any) => p.page_key === 'tiem_chung_dashboard' || p.page_key === 'ds_cho_tiem');
-      const targetUrl = tcPage ? tcPage.url : '/vaccination';
+      // Fallback: ưu tiên page dashboard của app cũ, nếu không có thì lấy page đầu tiên
+      // KHÔNG phải trang login trong sheet PAGE (app-agnostic — tránh hardcode URL project cũ
+      // như '/vaccination' gây false positive "đã đăng nhập" trên app khác).
+      const tcPage = pages.find((p: any) => p.page_key === 'tiem_chung_dashboard' || p.page_key === 'ds_cho_tiem')
+        || pages.find((p: any) => p.page_key && p.page_key.toLowerCase() !== 'login');
+      const targetUrl = tcPage ? tcPage.url : '/';
       console.log(`⚡ [Precondition Bypass] Thử navigate đến app để check session cũ: ${targetUrl}`);
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
       await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
@@ -438,28 +442,7 @@ async function executePrecondition(
     throw new Error(`❌ [Precondition] Error: Không tìm thấy kịch bản tiền đề [${currentPreId}]`);
   }
 
-  // Ghi đè locator các phần tử login trên local để khớp với giao diện thực tế
-  if (currentEnv === 'local') {
-    const elementsMap = (locatorResolver as any).elementsMap;
-    if (elementsMap) {
-      elementsMap.set('txt_username', {
-        element_id: 'txt_username',
-        locator_type: 'id',
-        locator_value: 'email'
-      });
-      elementsMap.set('txt_password', {
-        element_id: 'txt_password',
-        locator_type: 'id',
-        locator_value: 'password'
-      });
-      elementsMap.set('btn_login', {
-        element_id: 'btn_login',
-        locator_type: 'css',
-        locator_value: 'button:has-text("Đăng nhập với SSO")'
-      });
-      console.log('🔧 [Precondition Local Config] Đã tự động ghi đè locator các phần tử login cho môi trường local (txt_username -> id=email, btn_login -> Đăng nhập với SSO).');
-    }
-  }
+
 
   const contextData = { __runId: runId };
 

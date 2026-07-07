@@ -36,3 +36,7 @@ tmp/
 
 # Exclude docs folder from git
 docs/
+
+# npm install log + backup files
+.npm_install.log
+*.bak
